@@ -42,9 +42,36 @@
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 8px;
+    text-align: center;
   }
+  nav { margin: 0 0 12px; font-size: 0.85rem; }
+  nav a { color: var(--accent); }
+  #sound {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 10px;
+    line-height: 0;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  #sound:hover { color: var(--fg); }
+  #sound .on { display: none; }
+  #sound.enabled { color: var(--accent); }
+  #sound.enabled .off { display: none; }
+  #sound.enabled .on { display: inline; }
   #timer .label { color: var(--muted); font-size: 0.85rem; }
-  #timer .clock { font-size: 2rem; font-variant-numeric: tabular-nums; font-weight: 600; }
+  #timer .clock {
+    font-size: clamp(3rem, 15vw, 5.5rem);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  #timer .clock .d { display: inline-block; width: 0.64em; text-align: center; }
+  #timer .clock .sep { display: inline-block; width: 0.32em; text-align: center; transform: translateY(-0.1em); }
   #timer.running .clock { color: var(--accent); }
   #timer.over .clock { color: var(--warn); }
   code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
@@ -52,9 +79,18 @@
 </head>
 <body>
 
+<nav><a href="../">過去の課題</a></nav>
+
 <div id="timer" data-start="__START__" data-end="__END__">
   <div class="label" id="timer-label"></div>
   <div class="clock" id="timer-clock">--:--:--</div>
+  <button id="sound" type="button" aria-pressed="false" aria-label="音を有効にする" title="音を有効にする（開始と終了に鳴る）">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 9v6h4l5 4V5L7 9H3z" fill="currentColor" stroke="none"/>
+      <g class="off"><path d="M16 9l5 6M21 9l-5 6"/></g>
+      <g class="on"><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></g>
+    </svg>
+  </button>
 </div>
 
 <h1>__TITLE__</h1>
@@ -85,25 +121,83 @@ __SPEC__
     return pad(Math.floor(s / 3600)) + ":" + pad(Math.floor((s % 3600) / 60)) + ":" + pad(s % 60);
   }
 
+  // 数字ごとに幅を固定して、表示する数字が変わっても、時計の位置が動かないようにする。
+  // コロンは、大きな数字の中で下に見えやすいので、別の要素にして、少し上げる。
+  function show(s) {
+    clock.innerHTML = s.replace(/./g, function (c) {
+      return c === ":" ? '<span class="sep">:</span>' : '<span class="d">' + c + '</span>';
+    });
+  }
+
   function tick() {
     var now = Date.now();
     box.className = "";
     if (now < start) {
       label.textContent = "開始まで";
-      clock.textContent = fmt(start - now);
+      show(fmt(start - now));
     } else if (now < end) {
       box.className = "running";
       label.textContent = "残り時間";
-      clock.textContent = fmt(end - now);
+      show(fmt(end - now));
     } else {
       box.className = "over";
       label.textContent = "時間切れ。そこまでの状態を質問係に見せる";
-      clock.textContent = "00:00:00";
+      show("00:00:00");
     }
   }
 
   tick();
   setInterval(tick, 1000);
+
+  // 開始と終了の時刻に音を鳴らす。
+  // ブラウザの自動再生の制限があるので、ボタンを1回押して有効にする（ページを開き直したら、もう一度押す）。
+  // 音は、有効にした時点で、Web Audio の時刻に予約する。タブが裏に回っても、時刻どおりに鳴らすため。
+  var soundBtn = document.getElementById("sound");
+  var ctx = null;
+
+  function beep(at, freq, dur) {
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.exponentialRampToValueAtTime(0.25, at + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    osc.start(at);
+    osc.stop(at + dur + 0.05);
+  }
+
+  function pattern(offsetSec, freq, count) {
+    for (var i = 0; i < count; i++) {
+      beep(ctx.currentTime + offsetSec + i * 0.35, freq, 0.25);
+    }
+  }
+
+  function showSound(on) {
+    var text = on ? "音：有効（開始と終了に鳴る）。押すと無効にする" : "音を有効にする（開始と終了に鳴る）";
+    soundBtn.classList.toggle("enabled", on);
+    soundBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    soundBtn.setAttribute("aria-label", text);
+    soundBtn.title = text;
+  }
+
+  soundBtn.addEventListener("click", function () {
+    if (ctx) {
+      // 無効にする。コンテキストを閉じると、予約した音は全て取り消される。
+      ctx.close();
+      ctx = null;
+      showSound(false);
+      return;
+    }
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    ctx.resume();
+    beep(ctx.currentTime, 660, 0.15); // 有効にできたことを知らせる確認音
+    var now = Date.now();
+    if (start > now) { pattern((start - now) / 1000, 880, 2); }
+    if (end > now) { pattern((end - now) / 1000, 660, 3); }
+    showSound(true);
+  });
 })();
 </script>
 

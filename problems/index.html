@@ -19,10 +19,18 @@
     line-height: 1.8;
   }
   p { color: var(--muted); }
+  h2 { font-size: 1.15rem; margin: 32px 0 8px; }
+  a { color: #4493f8; }
+  @media (prefers-color-scheme: light) { a { color: #0969da; } }
 </style>
 </head>
 <body>
 <h1>coding-drill</h1>
-<p>週1回、1時間で解く実装課題の練習用ページ。問題文は、出題のたびに <code>/&lt;日曜の日付&gt;_&lt;題材&gt;/</code> に追加される。</p>
+<p>週1回、1時間で解く実装課題の練習用ページ。問題文は、出題のたびに追加される。</p>
+
+<h2>課題一覧</h2>
+<ul id="list">
+<!-- 出題タスクが、新しい課題を、この行の下に追加する（新しい順）。形式: <li><a href="<日曜の日付>_<題材>/"><日曜の日付> <題名></a></li> -->
+</ul>
 </body>
 </html>

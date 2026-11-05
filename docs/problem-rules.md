@@ -39,4 +39,5 @@
 
 - 問題文は `problems/<日付>_<題材>/index.html` に置く。`<日付>` は日曜の日付（`YYYY-MM-DD`）、`<題材>` は英数字とハイフンの短い名前
 - `templates/problem.html` をもとに作る
+- `problems/index.html` の課題一覧に、新しい課題へのリンクを、先頭に追加する。形式は、ファイル内のコメントのとおりにする
 - 作ったら、`main` にコミットして push する。Cloudflare が自動で公開する
