@@ -13,14 +13,14 @@
 
 | パス | 内容 |
 |---|---|
-| `problems/` | 問題文HTML。課題ごとに `<日付>_<題材>/index.html`。このフォルダだけを Cloudflare Pages で公開する |
+| `problems/` | 問題文HTML。課題ごとに `<日付>_<題材>/index.html`。このフォルダだけを Cloudflare（Workers の静的アセット）で公開する |
 | `templates/problem.html` | 問題文HTMLの雛形（カウントダウンタイマー付き） |
 | `docs/problem-rules.md` | 出題ルール。出題タスクが読む |
 | `feedback/` | FBドキュメント。課題ごとに `<課題名>.md`。公開しない |
 
 ## 公開範囲
 
-Cloudflare Pages で公開するのは `problems/` だけにする（出力ディレクトリを `problems` に指定する）。`feedback/` や `docs/` は公開しない。
+Cloudflare で公開するのは `problems/` だけにする（`wrangler.jsonc` の `assets.directory` で指定している）。`feedback/` や `docs/` は公開しない。デプロイの設定にあるプロジェクト名は、`wrangler.jsonc` の `name`（`coding-drill`）と合わせる。
 
 問題文HTMLのHTMLコメントには、採点側に渡す情報（クリティカルなエラー、軽微なエラー、質問するケース）が入っている。リポジトリは公開で、公開サイトのソース表示でも見えるため、解く前にソースを開かないこと。
 
